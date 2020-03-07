@@ -42,18 +42,34 @@ class MySQL:
         self.cur.execute(sql, (time, temperature, server_time))
         self.con.commit()
 
+    def get(self):
+        sql = "SELECT `id`, `time`, `temperature`, `server_time` FROM `data`"
+        self.cur.execute(sql)
+        response = {'data': []}
+        for data in self.cur.fetchall():
+            aux = {
+                'time': data['time'].strftime("%Y-%m-%d %H:%M:%S"),
+                'temperature': float(data['temperature']),
+                'server_time': data['server_time'].strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            response['data'].append(aux)
+        return response
+
 
 @celery.task
 def save(request_data):
     db = MySQL()
-    db.insert_data(request_data.time,request_data.temperature, request_data.server_time)
+    db.insert_data(request_data['time'],request_data['temperature'],request_data['server_time'])
 
+@app.route('/data', methods=['GET'])
+def GetData():
+    db = MySQL()
+    return db.get()
 
-
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    if request.method == 'GET':
-        return render_template('index.html')
+@app.route('/send', methods=['GET','POST'])
+def SendData():
+    if (request.method == 'GET'):
+        return render_template('data.html')
 
     temperature =  float((request.form['temperature']).replace(',','.'))
     server_time = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -67,7 +83,11 @@ def home():
 
     save.apply_async(args=[request_data], countdown=60)
     flash('A record will be sent in a minute')
-    return redirect(url_for('home'))
+    return redirect(url_for('SendData'))
+
+@app.route('/')
+def home():
+    return render_template('index.html')
 
 
 if __name__ == '__main__':

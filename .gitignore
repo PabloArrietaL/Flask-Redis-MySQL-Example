@@ -1,5 +1,6 @@
+app/__pycache__
+app/.env
 /__pycache__
-.env
 
 # IDEs and editors
 /.idea
