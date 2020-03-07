@@ -1,6 +1,5 @@
 import os, json, pymysql
 from datetime import datetime
-# from flask_redis import FlaskRedis
 from flask import Flask, render_template, request, url_for, redirect, flash
 from dotenv import load_dotenv
 from pathlib import Path
@@ -16,12 +15,17 @@ app.config['SECRET_KEY'] = os.getenv('SECRET')
 
 # Celery configuration
 redis_uri = 'redis://{}:{}/0'.format(os.getenv('REDIS_HOST'),os.getenv('REDIS_PORT'))
+
+# Celery configuration
 app.config['CELERY_BROKER_URL'] = redis_uri
 app.config['CELERY_RESULT_BACKEND'] = redis_uri
+
 
 # Initialize Celery
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
+
+
 
 class MySQL:
 
@@ -67,5 +71,8 @@ def home():
 
 
 if __name__ == '__main__':
+    # Initialize Celery
+    celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+    celery.conf.update(app.config)
     app.secret_key = app.config['SECRET_KEY']
     app.run(host="localhost", port=8000, debug=True)
